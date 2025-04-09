@@ -1,4 +1,4 @@
-Source code of our ICML 2024 paper "Less is More: on the Over-Globalizing Problem in Graph Transformers"
+Source code of my Graduation Design Project "Design and Implementation of Graph Transformer Model Based on Attention Calibration".
 
 # Environment
 
