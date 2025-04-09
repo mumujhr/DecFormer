@@ -1,0 +1,27 @@
+Model
+├─ Dropout(p=0.5)  # 初始Dropout层，输入任意维度，输出同维度（随机置0概率50%）
+├─ GCN模块
+│  ├─ conv层组 (ModuleList)
+│  │  ├─ GCNConv(3703→64)  # 第1层：图卷积，输入3703维，输出64维
+│  │  └─ GCNConv(64→6)     # 第2层：图卷积，输入64维，输出6维（可能用于初步分类或特征融合）
+│  └─ bns层组 (ModuleList)
+│     └─ BatchNorm1d(64)    # 对第1层GCNConv输出的64维特征归一化
+└─ SPDECT模块
+   ├─ Dropout(p=0.5)        # SPDECT输入前的Dropout层
+   ├─ attribute_encoder（属性编码器）
+   │  ├─ Linear(3703→64)    # 第1层全连接，输入3703维，输出64维
+   │  ├─ Dropout(p=0.5)     # 中间Dropout层
+   │  └─ Linear(64→64)      # 第2层全连接，保持64维特征
+   ├─ SPDECTLayers层组 (ModuleList，当前1层)
+   │  └─ SPDECTLayer（单一层）
+   │     ├─ LayerNorm(64)   # 节点特征归一化（64维）
+   │     ├─ node_transformer（多头注意力）
+   │     │  ├─ Wq/Wk/Wv: Linear(64→64)  # 生成Query/Key/Value（64维→64维）
+   │     │  ├─ ScaledDotProductAttention  # 缩放点积注意力，含Dropout(p=0.1)
+   │     │  └─ FC: Linear(64→64)         # 注意力输出线性变换
+   │     └─ node_ffn（前馈网络）
+   │        ├─ Linear(64→64)             # 第1层全连接
+   │        ├─ Dropout(p=0.1)            # 中间Dropout层
+   │        └─ LayerNorm(64)             # 输出前归一化
+   └─ classifier（分类器）
+      └─ Linear(64→6)                     # 最终线性层，64维→6维（6分类任务）

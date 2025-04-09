@@ -48,21 +48,26 @@ def load_fixed_splits(data_dir, dataset, name, protocol):
         splits['train'] = torch.as_tensor(dataset.train_mask)
         splits['valid'] = torch.as_tensor(dataset.valid_mask)
         splits['test'] = torch.as_tensor(dataset.test_mask)
-        splits['train'] = F.pad(splits['train'], [0, 1])
-        splits['valid'] = F.pad(splits['valid'], [0, 1])
-        splits['test'] = F.pad(splits['test'], [0, 1])
         splits_lst.append(splits)
-    elif name in ['film', 'deezer']:
+    elif name in [ 'deezer']:
         for i in range(10):
-            splits_file_path = '{}/{}'.format(data_dir, name) + '_split_50_25_' + str(i) + '.npz'
+            splits_file_path = '{}/{}'.format(data_dir+f'/{name}', name) + '_split_50_25_' + str(i) + '.npz'
             splits = {}
             with np.load(splits_file_path) as splits_file:
                 splits['train'] = torch.BoolTensor(splits_file['train_mask'])
                 splits['valid'] = torch.BoolTensor(splits_file['val_mask'])
                 splits['test'] = torch.BoolTensor(splits_file['test_mask'])
-                splits['train'] = F.pad(splits['train'], [0, 1])
-                splits['valid'] = F.pad(splits['valid'], [0, 1])
-                splits['test'] = F.pad(splits['test'], [0, 1])
+
+            splits_lst.append(splits)
+    elif name in ['film']:
+        for i in range(10):
+            splits_file_path = '{}/{}'.format(data_dir+f'/{name}', name) + '_split_0.6_0.2_' + str(i) + '.npz'
+            splits = {}
+            with np.load(splits_file_path) as splits_file:
+                splits['train'] = torch.BoolTensor(splits_file['train_mask'])
+                splits['valid'] = torch.BoolTensor(splits_file['val_mask'])
+                splits['test'] = torch.BoolTensor(splits_file['test_mask'])
+
             splits_lst.append(splits)
     else:
         raise NotImplementedError

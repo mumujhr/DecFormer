@@ -1,0 +1,57 @@
+graph LR
+    classDef process fill:#6495ED,stroke:#4169E1,stroke-width:3px,font-color:#FFFFFF
+
+    A(Model):::process
+    B(Dropout #40;0.5#41;):::process
+    C(GCN Module):::process
+    D(Conv Layer Group):::process
+    E(GCNConv #40;num_nodes -> num_hidden#41;):::process
+    F(GCNConv #40;num_hidden -> num_classes#41;):::process
+    G(BNS Layer Group):::process
+    H(BatchNorm1d #40;num_hidden#41;):::process
+    I(GT Module):::process
+    J(Dropout #40;0.5#41;):::process
+    K(Attribute Encoder):::process
+    L(Linear #40;num_nodes -> num_hidden#41;):::process
+    M(Dropout #40;0.5#41;):::process
+    N(Linear #40;num_hidden -> num_hidden#41;):::process
+    O(GT Layers Group):::process
+    P(GT Layer):::process
+    Q(LayerNorm #40;num_hidden#41;):::process
+    R(Node Transformer):::process
+    S(Wq/Wk/Wv: Linear #40;num_hidden -> num_hidden#41;):::process
+    T(Scaled Dot-Product Attention):::process
+    U(FC: Linear #40;num_hidden -> num_hidden#41;):::process
+    V(Node FFN):::process
+    W(Linear #40;num_hidden -> num_hidden#41;):::process
+    X(Dropout #40;0.1#41;):::process
+    Y(LayerNorm #40;num_hidden#41;):::process
+    Z(Classifier):::process
+    AA(Linear #40;num_hidden -> num_classes#41;):::process
+
+    A --> B
+    A --> C
+    A --> I
+    C --> D
+    D --> E
+    D --> F
+    C --> G
+    G --> H
+    I --> J
+    I --> K
+    K --> L
+    K --> M
+    K --> N
+    I --> O
+    O --> P
+    P --> Q
+    P --> R
+    R --> S
+    R --> T
+    R --> U
+    P --> V
+    V --> W
+    V --> X
+    V --> Y
+    I --> Z
+    Z --> AA
