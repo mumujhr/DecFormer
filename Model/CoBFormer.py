@@ -2,13 +2,13 @@ import torch
 
 from Model.ffn import *
 from Model.GCN import *
-from Layer.BGA import BGA
+from Layer.SPDECT import SPDECT
 
 
 class CoBFormer(torch.nn.Module):
     def __init__(self, num_nodes: int, in_channels: int, hidden_channels: int, out_channels: int,
                  activation, gcn_layers: int, gcn_type: int, layers: int, n_head: int, dropout1=0.5, dropout2=0.1,
-                 alpha=0.8, tau=0.5, gcn_use_bn=False, use_patch_attn=True):
+                 alpha=0.8, tau=0.5, gcn_use_bn=False):
         super(CoBFormer, self).__init__()
         self.alpha = alpha
         self.tau = tau
@@ -22,15 +22,12 @@ class CoBFormer(torch.nn.Module):
         else:
             self.gcn = GraphConv(in_channels, hidden_channels, out_channels, num_layers=gcn_layers, use_bn=gcn_use_bn)
         # self.gat = GAT(in_channels, hidden_channels, out_channels, activation, k=gcn_layers, use_bn=gcn_use_bn)
-        self.bga = BGA(num_nodes, in_channels, hidden_channels, out_channels, layers, n_head,
-                                         use_patch_attn, dropout1, dropout2)
+        self.spdect = SPDECT(num_nodes, in_channels, hidden_channels, out_channels, layers, n_head, dropout1, dropout2)
         self.attn = None
 
-    def forward(self, x: torch.Tensor, patch: torch.Tensor, edge_index: torch.Tensor, need_attn=False):
+    def forward(self, x: torch.Tensor, edge_index: torch.Tensor, calibration_mask=None, need_attn=False):
         z1 = self.gcn(x, edge_index)
-        z2 = self.bga(x, patch, need_attn)
-        if need_attn:
-            self.attn = self.beyondformer.attn
+        z2 = self.spdect(x, calibration_mask, need_attn)
 
         return z1, z2
 

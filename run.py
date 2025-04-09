@@ -7,7 +7,7 @@ from Model.CoBFormer import *
 from Train.train_test import *
 
 # max_val = -10000
-def co_early_stop_train(epochs, patience, model, data, label, patch, split_index, optimizer, show_details,
+def co_early_stop_train(epochs, patience, model, data, label, split_index, optimizer, show_details,
                         postfix, save_path=None):
     best_epoch1 = 0
     best_epoch2 = 0
@@ -19,7 +19,7 @@ def co_early_stop_train(epochs, patience, model, data, label, patch, split_index
     for epoch in range(1, epochs + 1):
 
         micro_val1, micro_test1, macro_val1, macro_test1, micro_val2, micro_test2, macro_val2, macro_test2 = co_train(
-            model, data, label, patch, split_index, optimizer)
+            model, data, label, split_index, optimizer)
         logger.append(
             [micro_val1, micro_test1, macro_val1, macro_test1, micro_val2, micro_test2, macro_val2, macro_test2])
 
@@ -52,7 +52,7 @@ def co_early_stop_train(epochs, patience, model, data, label, patch, split_index
     return res_gnn, res_trans
 
 
-def run(args, config, device, data, patch, split_idx, alpha, tau, postfix):
+def run(args, config, device, data, split_idx, alpha, tau, postfix):
     learning_rate = args.learning_rate
     # learning_rate2 = args.learning_rate2
 
@@ -66,9 +66,7 @@ def run(args, config, device, data, patch, split_idx, alpha, tau, postfix):
     gcn_type = args.gcn_type
     gcn_layers = args.gcn_layers
     gcn_use_bn = args.gcn_use_bn
-    use_patch_attn = args.use_patch_attn
     show_details = args.show_details
-    patch = patch.to(device)
     num_nodes = data.graph['num_nodes']
     num_classes = data.label.max() + 1
     num_features = data.graph['node_feat'].shape[-1]
@@ -86,12 +84,12 @@ def run(args, config, device, data, patch, split_idx, alpha, tau, postfix):
     #  layers=num_layers, gnn_layers=gcn_layers, n_head=n_head, alpha=alpha, ratio=ratio).to(device)
     model = CoBFormer(num_nodes, num_features, num_hidden, num_classes, activation, layers=num_layers,
                      gcn_layers=gcn_layers, gcn_type=gcn_type, n_head=n_head, alpha=alpha, tau=tau,
-                     gcn_use_bn=gcn_use_bn, use_patch_attn=use_patch_attn).to(device)
-    # print(model)
+                     gcn_use_bn=gcn_use_bn).to(device)
+    print(model)
 
     if args.dataset in ['film', 'CiteSeer', 'Cora', 'PubMed', "Deezer"]:
         optimizer = torch.optim.Adam([
-            {'params': model.bga.parameters(), 'weight_decay': weight_decay},
+            {'params': model.spdect.parameters(), 'weight_decay': weight_decay},
             {'params': model.gcn.parameters(), 'weight_decay': gcn_wd}
         ], lr=learning_rate)
     else:
@@ -103,7 +101,7 @@ def run(args, config, device, data, patch, split_idx, alpha, tau, postfix):
     res_gnn, res_trans = co_early_stop_train(
         num_epochs, patience,
         model, data, label,
-        patch, split_idx,
+        split_idx,
         optimizer, show_details,
         postfix)
     print("=== Train Final ===")

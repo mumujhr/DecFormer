@@ -32,11 +32,9 @@ if __name__ == '__main__':
     parser.add_argument('--gpu_id', type=int, default=6)
     parser.add_argument('--config', type=str, default='config.yaml')
     parser.add_argument('--gcn_use_bn', action='store_true', help='gcn use batch norm')
-    parser.add_argument('--use_patch_attn', action='store_true', help='transformer use patch attention')
     parser.add_argument('--show_details', type=bool, default=True)
     parser.add_argument('--gcn_type', type=int, default=1)
     parser.add_argument('--gcn_layers', type=int, default=2)
-    parser.add_argument('--n_patch', type=int, default=112)
     parser.add_argument('--batch_size', type=int, default=100000)
     parser.add_argument('--rand_split', action='store_true', help='random split dataset')
     parser.add_argument('--rand_split_class', action='store_true', help='random split dataset by class')
@@ -50,27 +48,29 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     assert args.gpu_id in range(0, 8)
-    torch.cuda.set_device(args.gpu_id)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 
     config = yaml.load(open(args.config), Loader=SafeLoader)[args.dataset]
     fix_seed(config['seed'])
 
-    path = osp.join(osp.expanduser('~'), 'datasets', args.dataset)
+    # path = osp.join(osp.expanduser('~'), 'datasets/')
+    path = '/Users/jihaoran/PycharmProjects/CoBFormer/Data'
+
     results = dict()
-    n_patch = args.n_patch
     alpha = args.alpha
     tau = args.tau
-    load_path = None
-    if args.dataset in ['ogbn-products']:
-        load_path = f'Data/partition/{args.dataset}_partition_{n_patch}.pt'
 
     # postfix = f'{n_patch}'
     postfix = "test"
     runs = 5
-    print("n_patch: ", n_patch)
 
     data = get_data(path, args.dataset)
+    
+    # calculate calibration mask
+    # step 1: calculate shortest path distance matrix
+    # step 2: calculate calibration mask: exp(-distance/tau)
+    data.graph['calibration_mask'] = None
+    
     # get the splits for all runs
     if args.rand_split:
         split_idx_lst = [data.get_idx_split(train_prop=args.train_prop, valid_prop=args.valid_prop)
@@ -80,7 +80,6 @@ if __name__ == '__main__':
                          for _ in range(runs)]
     else:
         split_idx_lst = load_fixed_splits(path, data, name=args.dataset, protocol=args.protocol)
-    patch = data.partition_patch(n_patch, load_path)
 
     batch_size = args.batch_size
 
@@ -92,10 +91,10 @@ if __name__ == '__main__':
             split_idx = split_idx_lst[r]
 
         if args.dataset in ['ogbn-products']:
-            res_gnn, res_trans = run_batch(args, config, device, data, patch, batch_size, split_idx, alpha, tau,
+            res_gnn, res_trans = run_batch(args, config, device, data, batch_size, split_idx, alpha, tau,
                                            postfix)
         else:
-            res_gnn, res_trans = run(args, config, device, data, patch, split_idx, alpha, tau, postfix)
+            res_gnn, res_trans = run(args, config, device, data, split_idx, alpha, tau, postfix)
         results[0].append(res_gnn)
         results[1].append(res_trans)
 

@@ -9,7 +9,6 @@ from torch_geometric.utils.num_nodes import maybe_num_nodes
 from torch_geometric.utils import add_remaining_self_loops, to_undirected, remove_self_loops, add_self_loops
 from torch_geometric.utils import scatter
 import torch_geometric.transforms as T
-from infomap import Infomap
 from Data.data_utils import *
 from ogb.nodeproppred import NodePropPredDataset
 import scipy
@@ -60,36 +59,15 @@ class NCDataset(object):
             ignore_negative = False if self.name == 'ogbn-proteins' else True
             train_mask, valid_mask, test_mask = rand_train_test_idx(
                 self.label, train_prop=train_prop, valid_prop=valid_prop, ignore_negative=ignore_negative)
-            train_mask = F.pad(train_mask, [0, 1])
-            valid_mask = F.pad(valid_mask, [0, 1])
-            test_mask = F.pad(test_mask, [0, 1])
             split_idx = {'train': train_mask,
                          'valid': valid_mask,
                          'test': test_mask}
         elif split_type == 'class':
             train_mask, valid_mask, test_mask = class_rand_splits(self.label, label_num_per_class=label_num_per_class)
-            train_mask = F.pad(train_mask, [0, 1])
-            valid_mask = F.pad(valid_mask, [0, 1])
-            test_mask = F.pad(test_mask, [0, 1])
             split_idx = {'train': train_mask,
                          'valid': valid_mask,
                          'test': test_mask}
         return split_idx
-
-    def partition_patch(self, n_patches, load_path=None):
-        if load_path is not None:
-            patch = torch.load(load_path)
-        else:
-            if n_patches == 1:
-                patch = torch.tensor(range(self.graph['num_nodes'] + 1)).unsqueeze(dim=0)
-            else:
-                patch = metis_partition(g=self.graph, n_patches=n_patches)
-            print('metis done!!!')
-        print('patch done!!!')
-        self.graph['num_nodes'] += 1
-        self.graph['node_feat'] = F.pad(self.graph['node_feat'], [0, 0, 0, 1])
-        self.label = F.pad(self.label, [0, 1])
-        return patch
 
     def __getitem__(self, idx):
         assert idx == 0, 'This dataset has only one graph'
@@ -117,8 +95,10 @@ def get_data(path, name):
 
 def load_planetoid_dataset(data_dir, name):
     # transform = T.NormalizeFeatures()
-    torch_dataset = Planetoid(root=data_dir,
-                              name=name)
+    p = os.path.join(data_dir, 'Planetoid')
+    print(p)
+    torch_dataset = Planetoid(root=p,
+                              name=name.lower())
     data = torch_dataset[0]
 
     edge_index = data.edge_index
@@ -164,12 +144,18 @@ def load_ogb_dataset(data_dir, name):
 
 
 def load_geom_gcn_dataset(data_dir, name):
-    graph_adjacency_list_file_path = os.path.join(data_dir, 'out1_graph_edges.txt'.format(name))
-    graph_node_features_and_labels_file_path = os.path.join(data_dir, 'out1_node_feature_label.txt'.format(name))
+
+    print(data_dir)
+
+    graph_adjacency_list_file_path = os.path.join(data_dir, 'film/out1_graph_edges.txt'.format(name))
+    graph_node_features_and_labels_file_path = os.path.join(data_dir, 'film/out1_node_feature_label.txt'.format(name))
 
     G = nx.DiGraph()
     graph_node_features_dict = {}
     graph_labels_dict = {}
+
+    print(graph_adjacency_list_file_path)
+    print(graph_node_features_and_labels_file_path)
 
     if name == 'film':
         with open(graph_node_features_and_labels_file_path) as graph_node_features_and_labels_file:
@@ -251,20 +237,43 @@ def load_geom_gcn_dataset(data_dir, name):
 
 
 def load_deezer_dataset(path):
+    # filename = 'deezer-europe'
+    # dataset = NCDataset(filename)
+    # deezer = scipy.io.loadmat(f'{path}/deezer-europe.mat')
+    #
+    # A, label, features = deezer['A'], deezer['label'], deezer['features']
+    # edge_index = torch.tensor(A.nonzero(), dtype=torch.long)
+    # node_feat = torch.tensor(features.todense(), dtype=torch.float)
+    # label = torch.tensor(label, dtype=torch.long).squeeze()
+    # num_nodes = label.shape[0]
+    #
+    # dataset.graph = {'edge_index': edge_index,
+    #                  'edge_feat': None,
+    #                  'node_feat': node_feat,
+    #                  'num_nodes': num_nodes}
+    # # dataset.graph['edge_index'] = to_undirected(dataset.graph['edge_index'])
+    # dataset.label = label
+    # return dataset
+
     filename = 'deezer-europe'
     dataset = NCDataset(filename)
-    deezer = scipy.io.loadmat(f'{path}/deezer-europe.mat')
+    deezer = np.load(f'{path}/DeezerEurope/raw/deezer_europe.npz')
 
-    A, label, features = deezer['A'], deezer['label'], deezer['features']
-    edge_index = torch.tensor(A.nonzero(), dtype=torch.long)
-    node_feat = torch.tensor(features.todense(), dtype=torch.float)
-    label = torch.tensor(label, dtype=torch.long).squeeze()
+    edges = deezer['edges']
+    features = deezer['features']
+    target = deezer['target']
+
+    edge_index = torch.tensor(edges.T, dtype=torch.long)  # 假设 edges 是 [2, num_edges] 形状
+    node_feat = torch.tensor(features, dtype=torch.float)  # 直接转换为张量，无需 todense
+    label = torch.tensor(target, dtype=torch.long).squeeze()
     num_nodes = label.shape[0]
 
     dataset.graph = {'edge_index': edge_index,
                      'edge_feat': None,
                      'node_feat': node_feat,
                      'num_nodes': num_nodes}
-    # dataset.graph['edge_index'] = to_undirected(dataset.graph['edge_index'])
+
     dataset.label = label
+
     return dataset
+
