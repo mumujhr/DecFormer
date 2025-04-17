@@ -14,17 +14,29 @@ class ScaledDotProductAttention(nn.Module):
         # self.label_same_matrix = torch.load('analysis/label_same_matrix_citeseer.pt').float()
 
     def forward(self, q, k, v, calibration_mask=None):
-        attn = torch.matmul(q / self.temperature, k.transpose(2, 3))
-            
+        attn = torch.matmul(q / self.temperature, k.transpose(2, 3)) # attn=q/temp*k^T,交换k的3、4维度
+
         attn = F.softmax(attn, dim=-1)
+        # print(f"attn shape before mask: {attn.shape}")  # [B, n_head, N, N],B为批次大小，n_head为头数，N为节点数
+        # print(f"attn shape: {attn[0, 0, :5, :5]}")    # 打印前5个节点的注意力权重矩阵
 
         if calibration_mask is not None:
+
+            # calibration_mask = calibration_mask.transpose(1, 2)
+
+            # print(f"cm shape: {calibration_mask.shape}")
+            # print("cm:", calibration_mask[0, 0, :5, :5])
+
+            # print(torch.where(calibration_mask > 1))
+
             attn = attn * calibration_mask
+            # print(f"attn * cm:{attn[0, 0, :5, :5]}")
             attn = attn / attn.sum(dim=-1, keepdim=True)
             
         attn = self.dropout(attn)
         
         output = torch.matmul(attn, v)
+
 
         return output, attn
 
@@ -72,7 +84,7 @@ class MultiHeadAttention(nn.Module):
 
         # For head axis broadcasting.
         if calibration_mask is not None:
-            calibration_mask = calibration_mask.unsqueeze(1)
+            calibration_mask = calibration_mask.view(1, -1, N_q, N_q)    # 这一步目的是为了让calibration_mask的维度与q、k、v一致
 
         q, attn = self.attention(q, k, v, calibration_mask=calibration_mask)
 

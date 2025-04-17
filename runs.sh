@@ -1,4 +1,6 @@
-python main.py --dataset=Cora --learning_rate=0.01 --gcn_wd=1e-3 --weight_decay=5e-5 --gcn_type=1 --gcn_layers=2  --alpha=0.7 --tau=0.3
+python main.py --dataset=Cora --learning_rate=0.01 --gcn_wd=1e-3 --weight_decay=5e-5 --gcn_type=1 --gcn_layers=2  --alpha=0.7 --tau=0.3 --lamda_val=0.1
+
+python main.py --dataset=Cora --learning_rate=0.01 --gcn_wd=1e-3 --weight_decay=5e-5 --gcn_type=1 --gcn_layers=2  --alpha=0.7 --tau=0.3 --lamda_val=0.3
 python main.py --dataset=CiteSeer --learning_rate=5e-3 --gcn_wd=1e-2 --weight_decay=5e-5 --gcn_type=1 --gcn_layers=2   --alpha=0.8 --tau=0.7
 python main.py --dataset=PubMed --learning_rate=5e-3 --gcn_wd=1e-3 --weight_decay=1e-3 --gcn_type=1 --gcn_layers=2   --alpha=0.7 --tau=0.3
 python main.py --dataset=film --learning_rate=5e-2 --gcn_wd=1e-4 --weight_decay=1e-3 --gcn_type=1 --gcn_layers=2   --alpha=0.7 --tau=0.9

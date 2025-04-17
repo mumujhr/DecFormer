@@ -95,7 +95,7 @@ def get_data(path, name):
 
 def load_planetoid_dataset(data_dir, name):
     # transform = T.NormalizeFeatures()
-    p = os.path.join(data_dir, 'Planetoid')
+    p = os.path.join(data_dir, '../datasets/Planetoid')
     print(p)
     torch_dataset = Planetoid(root=p,
                               name=name.lower())

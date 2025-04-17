@@ -58,10 +58,10 @@ film:
 deezer:
   seed: 123
   learning_rate: 0.01
-  num_hidden: 96
+  num_hidden: 32
   activation: 'relu'
   base_model: 'GCNConv'
   num_layers: 1
   n_head: 1
-  num_epochs: 200
+  num_epochs: 100
   weight_decay: 0.0005

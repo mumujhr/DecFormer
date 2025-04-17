@@ -12,7 +12,7 @@ from run_batch import run_batch
 from Data.data_utils import load_fixed_splits
 import random
 import warnings
-
+from Layer.SPDEC import calculate_calibration_mask
 
 def fix_seed(seed):
     random.seed(seed)
@@ -44,17 +44,20 @@ if __name__ == '__main__':
     parser.add_argument('--valid_prop', type=float, default=.2)
     parser.add_argument('--alpha', type=float, default=.8)
     parser.add_argument('--tau', type=float, default=.3)
+    parser.add_argument('--lambad_val',type=float,default=0.3)
 
     args = parser.parse_args()
 
     assert args.gpu_id in range(0, 8)
     device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+    # device = torch.device('cpu')
 
     config = yaml.load(open(args.config), Loader=SafeLoader)[args.dataset]
     fix_seed(config['seed'])
 
     # path = osp.join(osp.expanduser('~'), 'datasets/')
-    path = '/Users/jihaoran/PycharmProjects/CoBFormer/Data'
+    # path = '/Users/jihaoran/PycharmProjects/CoBFormer/Data'
+    path = '/Users/jihaoran/PycharmProjects/Graduation_Design/datasets'
 
     results = dict()
     alpha = args.alpha
@@ -65,11 +68,38 @@ if __name__ == '__main__':
     runs = 5
 
     data = get_data(path, args.dataset)
-    
+
+    # print(data.graph.keys())
+    # dict_keys(['edge_index', 'node_feat', 'edge_feat', 'num_nodes'])
+
+    edge_index = data.graph['edge_index']
+    num_nodes = data.graph['num_nodes']
+    # lambda_val = 0.3
+
+    # data.graph['calibration_mask'] = None
+
+    # load calibration mask
+    calibration_mask_path = osp.join(path, args.dataset, 'calibration_mask_'+ args.dataset + '.pt')
+    if osp.exists(calibration_mask_path):
+        calibration_mask = torch.load(calibration_mask_path)
+    else:
+        calibration_mask = calculate_calibration_mask(edge_index, num_nodes, args.lambad_val)
+        # save calibration mask
+        os.makedirs(osp.dirname(calibration_mask_path), exist_ok=True)
+        torch.save(calibration_mask, calibration_mask_path)
+
+
     # calculate calibration mask
     # step 1: calculate shortest path distance matrix
     # step 2: calculate calibration mask: exp(-distance/tau)
+
+    # calibration_mask = calculate_calibration_mask(edge_index, num_nodes, lambda_val)
     data.graph['calibration_mask'] = None
+    data.graph['calibration_mask'] = calibration_mask
+    data.graph['calibration_mask'] = data.graph['calibration_mask'].to(device)
+    # print(" data.graph['calibration_mask']——shape:", data.graph['calibration_mask'].shape)
+
+    print('calibration_mask Done!!!')
     
     # get the splits for all runs
     if args.rand_split:
@@ -90,11 +120,7 @@ if __name__ == '__main__':
         else:
             split_idx = split_idx_lst[r]
 
-        if args.dataset in ['ogbn-products']:
-            res_gnn, res_trans = run_batch(args, config, device, data, batch_size, split_idx, alpha, tau,
-                                           postfix)
-        else:
-            res_gnn, res_trans = run(args, config, device, data, split_idx, alpha, tau, postfix)
+        res_gnn, res_trans = run(args, config, device, data, split_idx, alpha, tau, postfix)
         results[0].append(res_gnn)
         results[1].append(res_trans)
 

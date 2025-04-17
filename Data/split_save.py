@@ -7,7 +7,8 @@ from data_utils import rand_train_test_idx
 
 dataset = 'deezer'
 #path = osp.join(osp.expanduser('~'), 'datasets', dataset)
-path=f'/Users/jihaoran/PycharmProjects/CoBFormer/Data'
+# path=f'/Users/jihaoran/PycharmProjects/CoBFormer/Data'
+path = '/Users/jihaoran/PycharmProjects/Graduation_Design/datasets'
 
 train_prop = 0.5
 valid_prop = 0.25
