@@ -1,8 +1,0 @@
-datasets/CiteSeer/calibration_mask_CiteSeer.pt filter=lfs diff=lfs merge=lfs -text
-datasets/Cora/calibration_mask_Cora.pt filter=lfs diff=lfs merge=lfs -text
-*.ptac filter=lfs diff=lfs merge=lfs -text
-*.ptab filter=lfs diff=lfs merge=lfs -text
-*.ptaa filter=lfs diff=lfs merge=lfs -text
-datasets/film/calibration_mask_film.pt filter=lfs diff=lfs merge=lfs -text
-datasets/PubMed/calibration_mask_PubMed.pt filter=lfs diff=lfs merge=lfs -text
-*.pt filter=lfs diff=lfs merge=lfs -text
